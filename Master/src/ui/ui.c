@@ -89,42 +89,6 @@ lv_obj_t * ui_Label14;
 lv_obj_t * ui_Keyboard2;
 
 
-void ui_event_okbnt(lv_event_t * e)
-{
-    lv_event_code_t event_code = lv_event_get_code(e);
-
-    if (event_code == LV_EVENT_RELEASED) {
-        // Lấy thông tin từ các textarea
-        const char * temperature1 = lv_textarea_get_text(ui_tempsetting1);
-        const char * humidity1 = lv_textarea_get_text(ui_humdsetting1);
-        const char * time1 = lv_textarea_get_text(ui_timesetting1);
-
-        const char * temperature2 = lv_textarea_get_text(ui_tempsetting2);
-        const char * humidity2 = lv_textarea_get_text(ui_humdsetting2);
-        const char * time2 = lv_textarea_get_text(ui_timesetting2);
-
-        const char * temperature3 = lv_textarea_get_text(ui_tempsetting3);
-        const char * humidity3 = lv_textarea_get_text(ui_humdsetting3);
-        const char * time3 = lv_textarea_get_text(ui_timesetting3);
-
-        const char * temperature4 = lv_textarea_get_text(ui_tempsetting4);
-        const char * humidity4 = lv_textarea_get_text(ui_humdsetting4);
-        const char * time4 = lv_textarea_get_text(ui_timesetting4);
-
-        // In thông số của tất cả các giai đoạn
-        printf("Giai doan 1 (Say khu am) - Nhiệt độ: %s, Độ ẩm: %s, Thời gian: %s\n", temperature1, humidity1, time1);
-        printf("Giai doan 2 (Len men) - Nhiệt độ: %s, Độ ẩm: %s, Thời gian: %s\n", temperature2, humidity2, time2);
-        printf("Giai doan 3 (On dinh) - Nhiệt độ: %s, Độ ẩm: %s, Thời gian: %s\n", temperature3, humidity3, time3);
-        printf("Giai doan 4 (Bao quan) - Nhiệt độ: %s, Độ ẩm: %s, Thời gian: %s\n", temperature4, humidity4, time4);
-
-        // Xóa màn hình hiện tại (ui_Screen2)
-        _ui_screen_delete(&ui_Screen2);
-
-        // Chuyển sang màn hình ui_Screen3
-        _ui_screen_change(&ui_Screen3, LV_SCR_LOAD_ANIM_MOVE_TOP, 500, 0, &ui_Screen3_screen_init);
-    }
-}
-
 // CUSTOM VARIABLES
 
 // SCREEN: ui_Screen3

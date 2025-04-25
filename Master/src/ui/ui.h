@@ -2,7 +2,7 @@
 // SquareLine Studio version: SquareLine Studio 1.5.1
 // LVGL version: 8.3.11
 // Project name: SquareLine_Project
-
+#include <Arduino.h>
 #ifndef _SQUARELINE_PROJECT_UI_H
 #define _SQUARELINE_PROJECT_UI_H
 
@@ -58,6 +58,9 @@ extern lv_obj_t * ui_humilabel;
 extern lv_obj_t * ui_fvhumi;
 extern lv_obj_t * ui_pvhumi;
 extern lv_obj_t * ui_Chart2;
+#ifdef __cplusplus
+void sendParameterToSlave(const String &type);
+#endif
 // CUSTOM VARIABLES
 
 // SCREEN: ui_Screen2

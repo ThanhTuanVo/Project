@@ -238,11 +238,9 @@ static void dropdown_event_handler(lv_event_t *e) {
         lv_obj_add_flag(ui_tempsetting2, LV_OBJ_FLAG_HIDDEN);
         lv_obj_add_flag(ui_humdsetting2, LV_OBJ_FLAG_HIDDEN);
         lv_obj_add_flag(ui_timesetting2, LV_OBJ_FLAG_HIDDEN);
-    
         lv_obj_add_flag(ui_tempsetting3, LV_OBJ_FLAG_HIDDEN);
         lv_obj_add_flag(ui_humdsetting3, LV_OBJ_FLAG_HIDDEN);
         lv_obj_add_flag(ui_timesetting3, LV_OBJ_FLAG_HIDDEN);
-    
         lv_obj_add_flag(ui_tempsetting4, LV_OBJ_FLAG_HIDDEN);
         lv_obj_add_flag(ui_humdsetting4, LV_OBJ_FLAG_HIDDEN);
         lv_obj_add_flag(ui_timesetting4, LV_OBJ_FLAG_HIDDEN);

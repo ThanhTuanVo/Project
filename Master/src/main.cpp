@@ -21,6 +21,13 @@ typedef struct sensor {
 } sensor;
 sensor DHTsensor;
 
+typedef struct parameter {
+  float temp;
+  float hum;
+  String time;
+} parameter;
+parameter FVparameter;
+
 HardwareSerial mySerial(0);
 TaskHandle_t WiFiTaskHandle = NULL;
 TaskHandle_t SensorTaskHandle = NULL;
@@ -127,6 +134,67 @@ void ReceiveSensorDataFromSlave(void *parameter) {
   }
 }
 
+void ui_event_okbnt(lv_event_t * e)
+{
+    lv_event_code_t event_code = lv_event_get_code(e);
+
+    if (event_code == LV_EVENT_RELEASED) {
+        // Lấy thông tin từ các textarea
+        const char * temperature1 = lv_textarea_get_text(ui_tempsetting1);
+        const char * humidity1 = lv_textarea_get_text(ui_humdsetting1);
+        const char * time1 = lv_textarea_get_text(ui_timesetting1);
+        FVparameter.temp = atof(temperature1);
+        FVparameter.hum = atof(humidity1);
+        FVparameter.time = String(time1);
+
+        const char * temperature2 = lv_textarea_get_text(ui_tempsetting2);
+        const char * humidity2 = lv_textarea_get_text(ui_humdsetting2);
+        const char * time2 = lv_textarea_get_text(ui_timesetting2);
+
+        const char * temperature3 = lv_textarea_get_text(ui_tempsetting3);
+        const char * humidity3 = lv_textarea_get_text(ui_humdsetting3);
+        const char * time3 = lv_textarea_get_text(ui_timesetting3);
+
+        const char * temperature4 = lv_textarea_get_text(ui_tempsetting4);
+        const char * humidity4 = lv_textarea_get_text(ui_humdsetting4);
+        const char * time4 = lv_textarea_get_text(ui_timesetting4);
+
+        // In thông số của tất cả các giai đoạn
+        printf("Giai doan 1 (Say khu am) - Nhiệt độ: %s, Độ ẩm: %s, Thời gian: %s\n", temperature1, humidity1, time1);
+        printf("Giai doan 2 (Len men) - Nhiệt độ: %s, Độ ẩm: %s, Thời gian: %s\n", temperature2, humidity2, time2);
+        printf("Giai doan 3 (On dinh) - Nhiệt độ: %s, Độ ẩm: %s, Thời gian: %s\n", temperature3, humidity3, time3);
+        printf("Giai doan 4 (Bao quan) - Nhiệt độ: %s, Độ ẩm: %s, Thời gian: %s\n", temperature4, humidity4, time4);
+
+        sendParameterToSlave("parameter");
+
+        
+        // Xóa màn hình hiện tại (ui_Screen2)
+        _ui_screen_delete(&ui_Screen2);
+
+        // Chuyển sang màn hình ui_Screen3
+        _ui_screen_change(&ui_Screen3, LV_SCR_LOAD_ANIM_MOVE_TOP, 500, 0, &ui_Screen3_screen_init);
+    }
+}
+
+void sendParameterToSlave( const String &type) {
+  // Tạo JSON chứa dữ liệu cảm biến mà không cần "stage"
+  StaticJsonDocument<128> doc;
+  doc ["type"] = type; 
+  
+  if (type == "parameter"){
+    doc["temp"] = FVparameter.temp;
+    doc["hum"] = FVparameter.hum;
+    doc["time"] = FVparameter.time;
+  }
+
+  // Chuyển JSON thành chuỗi
+  String json_data;
+  serializeJson(doc, json_data);
+  mySerial.print(json_data);  // Gửi dữ liệu qua UART
+  // Gửi dữ liệu qua UART
+  Serial.println("Sending sensor data to Slave...");
+  Serial.println(json_data);  // In dữ liệu JSON ra Serial để debug
+}
 
 // Hàm gửi dữ liệu sensor đến MQTT
 void sendSensorDataToMQTT() {
@@ -372,9 +440,8 @@ Serial.println("SD card initialized.");
 /** lv timer for run task */
 lv_timer_t* WifiTask = lv_timer_create(connectWifi, 5000, NULL);
 
-Serial.println("Setup done");
-
 xTaskCreate(ReceiveSensorDataFromSlave, "SensorDataTask", 4096, NULL, 2, &SensorTaskHandle);
+
 if (MQTTTaskHandle == NULL) {
   xTaskCreate(mqttConnectTask, "MQTTConnectTask", 4096, NULL, 1, &MQTTTaskHandle);
 }
@@ -386,6 +453,4 @@ void loop()
 {
   lv_task_handler(); /* Let LVGL do its work. */
   delay(5);
-
-  
 }
