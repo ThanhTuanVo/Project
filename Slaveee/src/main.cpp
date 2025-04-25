@@ -22,9 +22,9 @@ typedef struct sensor {
 sensor DHTsensor;
 
 typedef struct parameter {
-  float temp;
-  float hum;
-  String time;
+  float temp1, temp2, temp3, temp4;
+  float hum1, hum2, hum3, hum4;
+  String time1, time2, time3, time4;
 } parameter;
 parameter FVparameter;
 
@@ -32,25 +32,45 @@ parameter FVparameter;
 void receiveDataFromMaster(void *parameter) {
   while (true) {
     while (mySerial.available() > 0) {
-      char input[128];
-      int len = mySerial.readBytesUntil('}', input, sizeof(input) - 2);
-      input[len] = '}';
-      input[len + 1] = '\0';
-
-      StaticJsonDocument<128> doc;
+      char input[512];
+      int len = mySerial.readBytes(input, sizeof(input) - 1);
+      input[len] = '\0'; // Thêm ký tự kết thúc chuỗi
+      Serial.println("Received raw data:");
+      Serial.println(input);
+      StaticJsonDocument<512> doc;
       DeserializationError error = deserializeJson(doc, input);
 
       if (!error) {
         String type = doc["type"].as<String>();
         if (type == "parameter") {
-          FVparameter.temp = doc["temp"];
-          FVparameter.hum = doc["hum"];
-          FVparameter.time = doc["time"].as<String>();
+          JsonObject stage1 = doc["Say khu am"];
+          FVparameter.temp1 = stage1["temp"];
+          FVparameter.hum1 = stage1["hum"];
+          FVparameter.time1 = stage1["time"].as<String>();
 
-          Serial.print("Received parameter: ");
-          Serial.print("Temp: " + String(FVparameter.temp) + "°C, ");
-          Serial.print("Hum: " + String(FVparameter.hum) + "%, ");
-          Serial.println("Time: " + FVparameter.time);
+          // Giai đoạn 2
+          JsonObject stage2 = doc["Len men"];
+          FVparameter.temp2 = stage2["temp"];
+          FVparameter.hum2 = stage2["hum"];
+          FVparameter.time2 = stage2["time"].as<String>();
+
+          // Giai đoạn 3
+          JsonObject stage3 = doc["On dinh"];
+          FVparameter.temp3 = stage3["temp"];
+          FVparameter.hum3 = stage3["hum"];
+          FVparameter.time3 = stage3["time"].as<String>();
+
+          // Giai đoạn 4
+          JsonObject stage4 = doc["Bao quan"];
+          FVparameter.temp4 = stage4["temp"];
+          FVparameter.hum4 = stage4["hum"];
+          FVparameter.time4 = stage4["time"].as<String>();
+
+          Serial.println("Received parameter data:");
+          Serial.printf("Say khu am - Temp: %.2f°C, Hum: %.2f%%, Time: %s\n", FVparameter.temp1, FVparameter.hum1, FVparameter.time1.c_str());
+          Serial.printf("Len men - Temp: %.2f°C, Hum: %.2f%%, Time: %s\n", FVparameter.temp2, FVparameter.hum2, FVparameter.time2.c_str());
+          Serial.printf("On dinh - Temp: %.2f°C, Hum: %.2f%%, Time: %s\n", FVparameter.temp3, FVparameter.hum3, FVparameter.time3.c_str());
+          Serial.printf("Bao quan - Temp: %.2f°C, Hum: %.2f%%, Time: %s\n", FVparameter.temp4, FVparameter.hum4, FVparameter.time4.c_str());
         }
         Serial.println();
       } else {
@@ -104,7 +124,7 @@ void setup() {
   dht.begin();
 
   // Tạo task để nhận dữ liệu từ Master
-  xTaskCreate(receiveDataFromMaster, "ReceiveData", 2048, NULL, 1, NULL);
+  xTaskCreate(receiveDataFromMaster, "ReceiveData", 4096, NULL, 1, NULL);
 
   // Tạo task để gửi dữ liệu cảm biến đến Master
   xTaskCreate(sendSensorDataToMaster, "SendData", 2048, NULL, 2, NULL);
