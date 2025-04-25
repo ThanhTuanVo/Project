@@ -22,9 +22,9 @@ typedef struct sensor {
 sensor DHTsensor;
 
 typedef struct parameter {
-  float temp;
-  float hum;
-  String time;
+  float temp1, temp2, temp3, temp4;
+  float hum1, hum2, hum3, hum4;
+  String time1, time2, time3, time4;
 } parameter;
 parameter FVparameter;
 
@@ -140,30 +140,27 @@ void ui_event_okbnt(lv_event_t * e)
 
     if (event_code == LV_EVENT_RELEASED) {
         // Lấy thông tin từ các textarea
-        const char * temperature1 = lv_textarea_get_text(ui_tempsetting1);
-        const char * humidity1 = lv_textarea_get_text(ui_humdsetting1);
-        const char * time1 = lv_textarea_get_text(ui_timesetting1);
-        FVparameter.temp = atof(temperature1);
-        FVparameter.hum = atof(humidity1);
-        FVparameter.time = String(time1);
+        FVparameter.temp1 = atof(lv_textarea_get_text(ui_tempsetting1));
+        FVparameter.hum1 = atof(lv_textarea_get_text(ui_humdsetting1));
+        FVparameter.time1 = String(lv_textarea_get_text(ui_timesetting1));
 
-        const char * temperature2 = lv_textarea_get_text(ui_tempsetting2);
-        const char * humidity2 = lv_textarea_get_text(ui_humdsetting2);
-        const char * time2 = lv_textarea_get_text(ui_timesetting2);
+        FVparameter.temp2 = atof(lv_textarea_get_text(ui_tempsetting2));
+        FVparameter.hum2 = atof(lv_textarea_get_text(ui_humdsetting2));
+        FVparameter.time2 = String(lv_textarea_get_text(ui_timesetting2));
 
-        const char * temperature3 = lv_textarea_get_text(ui_tempsetting3);
-        const char * humidity3 = lv_textarea_get_text(ui_humdsetting3);
-        const char * time3 = lv_textarea_get_text(ui_timesetting3);
+        FVparameter.temp3 = atof(lv_textarea_get_text(ui_tempsetting3));
+        FVparameter.hum3 = atof(lv_textarea_get_text(ui_humdsetting3));
+        FVparameter.time3 = String(lv_textarea_get_text(ui_timesetting3));
 
-        const char * temperature4 = lv_textarea_get_text(ui_tempsetting4);
-        const char * humidity4 = lv_textarea_get_text(ui_humdsetting4);
-        const char * time4 = lv_textarea_get_text(ui_timesetting4);
+        FVparameter.temp4 = atof(lv_textarea_get_text(ui_tempsetting4));
+        FVparameter.hum4 = atof(lv_textarea_get_text(ui_humdsetting4));
+        FVparameter.time4 = String(lv_textarea_get_text(ui_timesetting4));
 
         // In thông số của tất cả các giai đoạn
-        printf("Giai doan 1 (Say khu am) - Nhiệt độ: %s, Độ ẩm: %s, Thời gian: %s\n", temperature1, humidity1, time1);
-        printf("Giai doan 2 (Len men) - Nhiệt độ: %s, Độ ẩm: %s, Thời gian: %s\n", temperature2, humidity2, time2);
-        printf("Giai doan 3 (On dinh) - Nhiệt độ: %s, Độ ẩm: %s, Thời gian: %s\n", temperature3, humidity3, time3);
-        printf("Giai doan 4 (Bao quan) - Nhiệt độ: %s, Độ ẩm: %s, Thời gian: %s\n", temperature4, humidity4, time4);
+        // printf("Giai doan 1 (Say khu am) - Nhiệt độ: %s, Độ ẩm: %s, Thời gian: %s\n", temperature1, humidity1, time1);
+        // printf("Giai doan 2 (Len men) - Nhiệt độ: %s, Độ ẩm: %s, Thời gian: %s\n", temperature2, humidity2, time2);
+        // printf("Giai doan 3 (On dinh) - Nhiệt độ: %s, Độ ẩm: %s, Thời gian: %s\n", temperature3, humidity3, time3);
+        // printf("Giai doan 4 (Bao quan) - Nhiệt độ: %s, Độ ẩm: %s, Thời gian: %s\n", temperature4, humidity4, time4);
 
         sendParameterToSlave("parameter");
 
@@ -178,13 +175,32 @@ void ui_event_okbnt(lv_event_t * e)
 
 void sendParameterToSlave( const String &type) {
   // Tạo JSON chứa dữ liệu cảm biến mà không cần "stage"
-  StaticJsonDocument<128> doc;
+  StaticJsonDocument<512> doc;
   doc ["type"] = type; 
   
   if (type == "parameter"){
-    doc["temp"] = FVparameter.temp;
-    doc["hum"] = FVparameter.hum;
-    doc["time"] = FVparameter.time;
+    JsonObject stage1 = doc.createNestedObject("Say khu am");
+    stage1["temp"] = FVparameter.temp1;
+    stage1["hum"] = FVparameter.hum1;
+    stage1["time"] = FVparameter.time1;
+
+    // Giai đoạn 2
+    JsonObject stage2 = doc.createNestedObject("Len men");
+    stage2["temp"] = FVparameter.temp2;
+    stage2["hum"] = FVparameter.hum2;
+    stage2["time"] = FVparameter.time2;
+
+    // Giai đoạn 3
+    JsonObject stage3 = doc.createNestedObject("Bao quan");
+    stage3["temp"] = FVparameter.temp3;
+    stage3["hum"] = FVparameter.hum3;
+    stage3["time"] = FVparameter.time3;
+
+    // Giai đoạn 4
+    JsonObject stage4 = doc.createNestedObject("On dinh");
+    stage4["temp"] = FVparameter.temp4;
+    stage4["hum"] = FVparameter.hum4;
+    stage4["time"] = FVparameter.time4;
   }
 
   // Chuyển JSON thành chuỗi
@@ -379,7 +395,7 @@ void connectWifi(lv_timer_t * timer) {
 
 void setup()
 {
-  Serial.begin(115200);
+  // Serial.begin(115200);
   mySerial.begin(115200, SERIAL_8N1, 44, 43); // RX_PIN, TX_PIN là các chân UART0
 
   lv_init();
