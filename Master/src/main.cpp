@@ -19,7 +19,7 @@ typedef struct sensor {
   float hum;
   int readingId;
 } sensor;
-sensor DHTsensor;
+sensor PTaSHTsensor;
 
 typedef struct parameter {
   float temp1, temp2, temp3, temp4;
@@ -110,19 +110,19 @@ void ReceiveSensorDataFromSlave(void *parameter) {
         if (!error) {
             String type = jsonRecvData["type"].as<String>();
             if (type == "sensor") {    
-                DHTsensor.id = jsonRecvData["id"].as<String>().toInt();
-                DHTsensor.temp = jsonRecvData["temp"];
-                DHTsensor.hum = jsonRecvData["hum"];
-                DHTsensor.readingId = jsonRecvData["readingId"].as<String>().toInt();
+                PTaSHTsensor.id = jsonRecvData["id"].as<String>().toInt();
+                PTaSHTsensor.temp = jsonRecvData["temp"];
+                PTaSHTsensor.hum = jsonRecvData["hum"];
+                PTaSHTsensor.readingId = jsonRecvData["readingId"].as<String>().toInt();
 
                 Serial.print("Received sensor data:\n");
-                Serial.print("ID: "); Serial.println(DHTsensor.id);
-                Serial.print("Temp: "); Serial.println(DHTsensor.temp);
-                Serial.print("Hum: "); Serial.println(DHTsensor.hum);
-                Serial.print("Reading ID: "); Serial.println(DHTsensor.readingId);
+                Serial.print("ID: "); Serial.println(PTaSHTsensor.id);
+                Serial.print("Temp: "); Serial.println(PTaSHTsensor.temp);
+                Serial.print("Hum: "); Serial.println(PTaSHTsensor.hum);
+                Serial.print("Reading ID: "); Serial.println(PTaSHTsensor.readingId);
 
-                String tempString = String("PV: ") + String(DHTsensor.temp) + "°C";
-                String humString = String("PV: ") + String(DHTsensor.hum) + "%";
+                String tempString = String("PV: ") + String(PTaSHTsensor.temp) + "°C";
+                String humString = String("PV: ") + String(PTaSHTsensor.hum) + "%";
                 lv_label_set_text(ui_pvtemp, tempString.c_str());
                 lv_label_set_text(ui_pvhumi, humString.c_str());
             }
@@ -164,7 +164,6 @@ void ui_event_okbnt(lv_event_t * e)
 
         sendParameterToSlave("parameter");
 
-        
         // Xóa màn hình hiện tại (ui_Screen2)
         _ui_screen_delete(&ui_Screen2);
 
@@ -174,7 +173,6 @@ void ui_event_okbnt(lv_event_t * e)
 }
 
 void sendParameterToSlave( const String &type) {
-  // Tạo JSON chứa dữ liệu cảm biến mà không cần "stage"
   StaticJsonDocument<512> doc;
   doc ["type"] = type; 
   
@@ -203,6 +201,10 @@ void sendParameterToSlave( const String &type) {
     stage4["time"] = FVparameter.time4;
   }
 
+  if (type == "StartState"){
+    doc["Start"] = StartState;
+  }
+
   // Chuyển JSON thành chuỗi
   String json_data;
   serializeJson(doc, json_data);
@@ -215,7 +217,7 @@ void sendParameterToSlave( const String &type) {
 // Hàm gửi dữ liệu sensor đến MQTT
 void sendSensorDataToMQTT() {
   if (client.connected()) {
-    String payload = String("{\"temp\":") + String(DHTsensor.temp) + ", \"hum\":" + String(DHTsensor.hum) + "}";
+    String payload = String("{\"temp\":") + String(PTaSHTsensor.temp) + ", \"hum\":" + String(PTaSHTsensor.hum) + "}";
     client.publish(mqtt_topic, payload.c_str());
     Serial.println("Sensor data sent to MQTT broker: " + payload);
   }

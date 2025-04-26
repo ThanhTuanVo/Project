@@ -46,6 +46,7 @@ lv_obj_t * ui_humilabel;
 lv_obj_t * ui_fvhumi;
 lv_obj_t * ui_pvhumi;
 lv_obj_t * ui_Chart2;
+bool StartState = false;
 // CUSTOM VARIABLES
 
 // SCREEN: ui_Screen2
@@ -151,6 +152,19 @@ lv_obj_t * ui____initial_actions0;
 ///////////////////// ANIMATIONS ////////////////////
 
 ///////////////////// FUNCTIONS ////////////////////
+
+void ui_event_Start(lv_event_t * e)
+{
+    lv_event_code_t event_code = lv_event_get_code(e);
+    lv_obj_t * target = lv_event_get_target(e);
+
+    // Kiểm tra nếu sự kiện là khi nút được thả (LV_EVENT_RELEASED)
+    if(event_code == LV_EVENT_RELEASED) {
+        // Đặt cờ trạng thái StartState thành true (hoặc trạng thái bạn cần)
+        StartState = true;
+    }
+    sendParameterToSlave("StartState");
+}
 void ui_event_Settingbnt(lv_event_t * e)
 {
     lv_event_code_t event_code = lv_event_get_code(e);

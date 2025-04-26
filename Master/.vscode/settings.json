@@ -1,5 +1,5 @@
 {
-    "cmake.sourceDirectory": "D:/ESP32/Espressif/frameworks/Master/src/ui",
+    "cmake.sourceDirectory": "D:/ESP32/Espressif/frameworks/Project/Master/.pio/libdeps/esp32-s3-devkitm-1/LovyanGFX/examples/Test/build_test",
     "files.associations": {
         "array": "c",
         "chrono": "c",

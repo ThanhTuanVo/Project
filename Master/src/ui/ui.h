@@ -61,6 +61,8 @@ extern lv_obj_t * ui_Chart2;
 #ifdef __cplusplus
 void sendParameterToSlave(const String &type);
 #endif
+extern bool StartState;
+void ui_event_Start(lv_event_t * e);
 // CUSTOM VARIABLES
 
 // SCREEN: ui_Screen2
