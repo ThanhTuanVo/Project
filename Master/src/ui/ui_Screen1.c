@@ -347,6 +347,7 @@ void ui_Screen1_screen_init(void)
     static lv_coord_t ui_Chart2_series_1_array[] = { 0, 10, 20, 40, 80, 80, 40, 20, 10, 0 };
     lv_chart_set_ext_y_array(ui_Chart2, ui_Chart2_series_1, ui_Chart2_series_1_array);
 
+    lv_obj_add_event_cb(ui_Startbnt, ui_event_Startbnt, LV_EVENT_CLICKED, NULL);
     lv_obj_add_event_cb(ui_Settingbnt, ui_event_Settingbnt, LV_EVENT_ALL, NULL);
 
 }

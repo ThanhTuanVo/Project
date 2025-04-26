@@ -5,7 +5,6 @@
 #include "lovyanGfxSetup.h"
 #include <WiFi.h>
 #include <ArduinoJson.h>
-#include "DHT.h"
 #include <SD.h>
 #include <PubSubClient.h>
 
@@ -134,6 +133,20 @@ void ReceiveSensorDataFromSlave(void *parameter) {
   }
 }
 
+bool StartState = false;
+
+void ui_event_Startbnt(lv_event_t * e)
+{
+    lv_event_code_t event_code = lv_event_get_code(e);
+    if(event_code == LV_EVENT_CLICKED) {
+        // Đặt cờ trạng thái StartState thành true (hoặc trạng thái bạn cần)
+        StartState = true;
+        printf("StartState: %d\n", StartState);
+        
+    }
+    sendParameterToSlave("StartState");
+}
+
 void ui_event_okbnt(lv_event_t * e)
 {
     lv_event_code_t event_code = lv_event_get_code(e);
@@ -203,6 +216,7 @@ void sendParameterToSlave( const String &type) {
 
   if (type == "StartState"){
     doc["Start"] = StartState;
+    StartState = false;
   }
 
   // Chuyển JSON thành chuỗi

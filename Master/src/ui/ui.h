@@ -14,7 +14,6 @@ extern "C" {
 
 #include "ui_helpers.h"
 #include "ui_events.h"
-
 extern char wifi_ssid[32];
 extern char wifi_password[32];
 
@@ -42,6 +41,7 @@ extern lv_obj_t * ui_dehumidifierfan;
 extern lv_obj_t * ui_humipump;
 extern lv_obj_t * ui_convectionfan;
 extern lv_obj_t * ui_heating;
+void ui_event_Startbnt(lv_event_t * e);
 extern lv_obj_t * ui_Startbnt;
 extern lv_obj_t * ui_startLabel;
 extern lv_obj_t * ui_Stopbnt;
@@ -61,8 +61,8 @@ extern lv_obj_t * ui_Chart2;
 #ifdef __cplusplus
 void sendParameterToSlave(const String &type);
 #endif
-extern bool StartState;
-void ui_event_Start(lv_event_t * e);
+
+void ui_event_Startbnt(lv_event_t * e);
 // CUSTOM VARIABLES
 
 // SCREEN: ui_Screen2
@@ -104,9 +104,9 @@ void ui_event_cancelbnt(lv_event_t * e);
 extern lv_obj_t * ui_cancelbnt;
 extern lv_obj_t * ui_Label14;
 extern lv_obj_t * ui_Keyboard2;
-
 // CUSTOM VARIABLES
 static void dropdown_event_handler(lv_event_t * e);
+
 // SCREEN: ui_Screen3
 void ui_Screen3_screen_init(void);
 extern lv_obj_t * ui_Screen3;

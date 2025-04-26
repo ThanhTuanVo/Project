@@ -223,7 +223,6 @@ void ui_Screen4_screen_init(void)
     lv_obj_add_event_cb(ui_passtext, ui_event_passtext, LV_EVENT_ALL, NULL);
     lv_obj_add_event_cb(ui_Panel1, ui_event_Panel1, LV_EVENT_ALL, NULL);
     lv_obj_add_event_cb(ui_Button5, ui_event_Button5, LV_EVENT_ALL, NULL);
-
     lv_obj_add_event_cb(ui_Keyboard1, ui_event_KeyBoard1, LV_EVENT_ALL, NULL);
 
 }

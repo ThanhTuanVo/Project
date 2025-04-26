@@ -4,7 +4,6 @@
 // Project name: SquareLine_Project
 
 #include "ui.h"
-
 static void dropdown_event_handler(lv_event_t *e);
 
 void ui_Screen2_screen_init(void)

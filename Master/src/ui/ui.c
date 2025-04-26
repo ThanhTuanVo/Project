@@ -30,6 +30,7 @@ lv_obj_t * ui_dehumidifierfan;
 lv_obj_t * ui_humipump;
 lv_obj_t * ui_convectionfan;
 lv_obj_t * ui_heating;
+void ui_event_Startbnt(lv_event_t * e);
 lv_obj_t * ui_Startbnt;
 lv_obj_t * ui_startLabel;
 lv_obj_t * ui_Stopbnt;
@@ -46,7 +47,7 @@ lv_obj_t * ui_humilabel;
 lv_obj_t * ui_fvhumi;
 lv_obj_t * ui_pvhumi;
 lv_obj_t * ui_Chart2;
-bool StartState = false;
+
 // CUSTOM VARIABLES
 
 // SCREEN: ui_Screen2
@@ -88,8 +89,6 @@ void ui_event_cancelbnt(lv_event_t * e);
 lv_obj_t * ui_cancelbnt;
 lv_obj_t * ui_Label14;
 lv_obj_t * ui_Keyboard2;
-
-
 // CUSTOM VARIABLES
 
 // SCREEN: ui_Screen3
@@ -152,19 +151,15 @@ lv_obj_t * ui____initial_actions0;
 ///////////////////// ANIMATIONS ////////////////////
 
 ///////////////////// FUNCTIONS ////////////////////
+// void ui_event_Startbnt(lv_event_t * e)
+// {
+//     lv_event_code_t event_code = lv_event_get_code(e);
 
-void ui_event_Start(lv_event_t * e)
-{
-    lv_event_code_t event_code = lv_event_get_code(e);
-    lv_obj_t * target = lv_event_get_target(e);
+//     if(event_code == LV_EVENT_RELEASED) {
+//         (e);
+//     }
+// }
 
-    // Kiểm tra nếu sự kiện là khi nút được thả (LV_EVENT_RELEASED)
-    if(event_code == LV_EVENT_RELEASED) {
-        // Đặt cờ trạng thái StartState thành true (hoặc trạng thái bạn cần)
-        StartState = true;
-    }
-    sendParameterToSlave("StartState");
-}
 void ui_event_Settingbnt(lv_event_t * e)
 {
     lv_event_code_t event_code = lv_event_get_code(e);
@@ -283,6 +278,7 @@ void ui_event_timesetting4(lv_event_t * e)
     }
 }
 
+
 void ui_event_cancelbnt(lv_event_t * e)
 {
     lv_event_code_t event_code = lv_event_get_code(e);
@@ -377,7 +373,6 @@ void ui_init(void)
     ui____initial_actions0 = lv_obj_create(NULL);
     lv_disp_load_scr(ui_Screen1);
 }
-
 void ui_event_KeyBoard1(lv_event_t * e){
     lv_event_code_t event_code = lv_event_get_code(e);
     lv_obj_t * keyboard = lv_event_get_target(e);
