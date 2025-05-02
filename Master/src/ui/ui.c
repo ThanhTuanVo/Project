@@ -47,7 +47,6 @@ lv_obj_t * ui_humilabel;
 lv_obj_t * ui_fvhumi;
 lv_obj_t * ui_pvhumi;
 lv_obj_t * ui_Chart2;
-
 // CUSTOM VARIABLES
 
 // SCREEN: ui_Screen2
@@ -278,6 +277,15 @@ void ui_event_timesetting4(lv_event_t * e)
     }
 }
 
+// void ui_event_okbnt(lv_event_t * e)
+// {
+//     lv_event_code_t event_code = lv_event_get_code(e);
+
+//     if(event_code == LV_EVENT_RELEASED) {
+//         _ui_screen_delete(&ui_Screen2);
+//         _ui_screen_change(&ui_Screen3, LV_SCR_LOAD_ANIM_MOVE_TOP, 500, 0, &ui_Screen3_screen_init);
+//     }
+// }
 
 void ui_event_cancelbnt(lv_event_t * e)
 {

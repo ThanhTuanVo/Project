@@ -227,7 +227,7 @@ static void dropdown_event_handler(lv_event_t *e) {
     lv_obj_t *dropdown = lv_event_get_target(e);
     char selected_option[64];
     lv_dropdown_get_selected_str(dropdown, selected_option, sizeof(selected_option));
-    printf("Selected option: %s\n", selected_option);
+    //printf("Selected option: %s\n", selected_option);
 
     if (strcmp(selected_option, "Say khu am") == 0) {
         lv_obj_clear_flag(ui_tempsetting1, LV_OBJ_FLAG_HIDDEN);

@@ -42,7 +42,9 @@ typedef struct parameter {
 parameter FVparameter;
 
 bool StartState = false;
-
+unsigned long stageStartTime = 0;
+int currentStage = 0;
+bool stageInProgress = false;
 
 // Hàm nhận dữ liệu từ Master qua UART
 void receiveDataFromMaster(void *parameter) {
@@ -89,15 +91,10 @@ void receiveDataFromMaster(void *parameter) {
           Serial.printf("On dinh - Temp: %.2f°C, Hum: %.2f%%, Time: %s\n", FVparameter.temp3, FVparameter.hum3, FVparameter.time3.c_str());
           Serial.printf("Bao quan - Temp: %.2f°C, Hum: %.2f%%, Time: %s\n", FVparameter.temp4, FVparameter.hum4, FVparameter.time4.c_str());
         }
-
-        if (type == "StartState"){
+        else if (type == "StartState"){
           StartState = doc["Start"];
-          if (StartState) {
-            Serial.println("Start state received: true");
-            // gọi chương trình hoạt động
-          } else {
-            Serial.println("Start state received: false");
-          }
+          stageStartTime = millis();
+          stageInProgress = true;
 
         }
         Serial.println();
@@ -106,6 +103,109 @@ void receiveDataFromMaster(void *parameter) {
       }
     }
     vTaskDelay(2000); // Delay để tránh bị block
+  }
+}
+
+void runStages() {
+  if (!stageInProgress) return; // Nếu không trong trạng thái thực hiện giai đoạn thì thoát
+
+  unsigned long currentTime = millis();
+  StaticJsonDocument<512> doc;
+
+  // Thêm type vào JSON
+  doc["type"] = "stage_info"; // Đánh dấu kiểu dữ liệu là "stage_info"
+
+  switch (currentStage) {
+    case 0: // Giai đoạn Say khu am
+      if (currentTime - stageStartTime >= FVparameter.time1.toInt() * 1000) {
+        Serial.println("End of 'Say khu am' stage");
+        currentStage++;
+        stageStartTime = currentTime; // Reset timer for next stage
+      } else {
+        // Thêm thông tin về giai đoạn
+        doc["stage"] = "Say khu am";
+        doc["temp"] = FVparameter.temp1;
+        doc["hum"] = FVparameter.hum1;
+        doc["time_left"] = (FVparameter.time1.toInt() * 1000 - (currentTime - stageStartTime)) / 1000;
+
+        String output;
+        ArduinoJson::serializeJson(doc, output);
+        mySerial.print(output); // Gửi dữ liệu JSON qua UART
+        Serial.println("Running 'Say khu am' stage...");
+        Serial.printf("Stage: Say khu am, Temp: %.2f°C, Hum: %.2f%%, Time left: %d seconds\n", FVparameter.temp1, FVparameter.hum1, doc["time_left"]);
+      }
+      break;
+    
+    case 1: // Giai đoạn Len men
+      if (currentTime - stageStartTime >= FVparameter.time2.toInt() * 1000) {
+        Serial.println("End of 'Len men' stage");
+        currentStage++;
+        stageStartTime = currentTime;
+      } else {
+        // Thêm thông tin về giai đoạn
+        doc["stage"] = "Len men";
+        doc["temp"] = FVparameter.temp2;
+        doc["hum"] = FVparameter.hum2;
+        doc["time_left"] = (FVparameter.time2.toInt() * 1000 - (currentTime - stageStartTime)) / 1000;
+
+        String output;
+        ArduinoJson::serializeJson(doc, output);
+        mySerial.print(output); // Gửi dữ liệu JSON qua UART
+        Serial.println("Running 'Len men' stage...");
+        Serial.printf("Stage: Len men, Temp: %.2f°C, Hum: %.2f%%, Time left: %d seconds\n", FVparameter.temp2, FVparameter.hum2, doc["time_left"]);
+      }
+      break;
+
+    case 2: // Giai đoạn On dinh
+      if (currentTime - stageStartTime >= FVparameter.time3.toInt() * 1000) {
+        Serial.println("End of 'On dinh' stage");
+        currentStage++;
+        stageStartTime = currentTime;
+      } else {
+        // Thêm thông tin về giai đoạn
+        doc["stage"] = "On dinh";
+        doc["temp"] = FVparameter.temp3;
+        doc["hum"] = FVparameter.hum3;
+        doc["time_left"] = (FVparameter.time3.toInt() * 1000 - (currentTime - stageStartTime)) / 1000;
+
+        String output;
+        ArduinoJson::serializeJson(doc, output);
+        mySerial.print(output); // Gửi dữ liệu JSON qua UART
+        Serial.println("Running 'On dinh' stage...");
+        Serial.printf("Stage: On dinh, Temp: %.2f°C, Hum: %.2f%%, Time left: %d seconds\n", FVparameter.temp3, FVparameter.hum3, doc["time_left"]);
+      }
+      break;
+
+    case 3: // Giai đoạn Bao quan
+      if (currentTime - stageStartTime >= FVparameter.time4.toInt() * 1000) {
+        Serial.println("End of 'Bao quan' stage");
+        currentStage = 0; 
+        stageInProgress = false; // All stages completed
+      } else {
+        // Thêm thông tin về giai đoạn
+        doc["stage"] = "Bao quan";
+        doc["temp"] = FVparameter.temp4;
+        doc["hum"] = FVparameter.hum4;
+        doc["time_left"] = (FVparameter.time4.toInt() * 1000 - (currentTime - stageStartTime)) / 1000;
+
+        String output;
+        ArduinoJson::serializeJson(doc, output);
+        mySerial.print(output); // Gửi dữ liệu JSON qua UART
+        Serial.println("Running 'Bao quan' stage...");
+        Serial.printf("Stage: Bao quan, Temp: %.2f°C, Hum: %.2f%%, Time left: %d seconds\n", FVparameter.temp4, FVparameter.hum4, doc["time_left"]);
+      }
+      break;
+
+    default:
+      break;
+  }
+}
+
+void runStagesTask(void *parameter) {
+  while (true) {
+    runStages();  // Gọi runStages mỗi lần trong task
+
+    vTaskDelay(1000 / portTICK_PERIOD_MS);  // Delay 1 giây giữa mỗi lần gọi
   }
 }
 
@@ -140,7 +240,7 @@ void sendSensorDataToMaster(void *parameter) {
     doc["readingId"] = PTaSHTsensor.readingId;
 
     String output;
-    serializeJson(doc, output);
+    ArduinoJson::serializeJson(doc, output);
     mySerial.print(output); // Gửi dữ liệu JSON qua UART
 
     Serial.print("Sent sensor data to master: ");
@@ -165,10 +265,13 @@ void setup() {
     while (1) delay(1);
   }
   // Tạo task để nhận dữ liệu từ Master
-  xTaskCreate(receiveDataFromMaster, "ReceiveData", 4096, NULL, 1, NULL);
+  xTaskCreate(receiveDataFromMaster, "ReceiveData", 4096, NULL, 3, NULL);
 
   // Tạo task để gửi dữ liệu cảm biến đến Master
   xTaskCreate(sendSensorDataToMaster, "SendData", 2048, NULL, 2, NULL);
+
+  // Tạo task để chạy các giai đoạn
+  xTaskCreate(runStagesTask, "RunStages", 4096, NULL, 1, NULL);
 }
 
 void loop() {
