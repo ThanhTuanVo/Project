@@ -388,7 +388,7 @@ void ui_event_KeyBoard1(lv_event_t * e){
     {
         snprintf(wifi_ssid, sizeof(wifi_ssid), "%s", lv_textarea_get_text(ui_idtext));
         snprintf(wifi_password, sizeof(wifi_password), "%s", lv_textarea_get_text(ui_passtext));
-        printf("DEBUG: SSID=%s, PASS=%s\n", wifi_ssid, wifi_password);
+        //printf("DEBUG: SSID=%s, PASS=%s\n", wifi_ssid, wifi_password);
     }
 }
 

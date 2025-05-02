@@ -98,12 +98,12 @@ static uint32_t my_tick_get_cb (void) { return millis(); }
 void ReceiveSensorDataFromSlave(void *parameter) {
   while (true) {
     while (mySerial.available()) { 
-        char input[128];
+        char input[512];
         int len = mySerial.readBytesUntil('}', input, sizeof(input) - 2);
         input[len] = '}'; 
         input[len + 1] = '\0';
 
-        StaticJsonDocument<128> jsonRecvData;
+        StaticJsonDocument<512> jsonRecvData;
         DeserializationError error = deserializeJson(jsonRecvData, input);
 
         if (!error) {
@@ -125,6 +125,34 @@ void ReceiveSensorDataFromSlave(void *parameter) {
                 lv_label_set_text(ui_pvtemp, tempString.c_str());
                 lv_label_set_text(ui_pvhumi, humString.c_str());
             }
+
+            // Kiểm tra nếu nhận được dữ liệu giai đoạn
+            if (type == "stage_info") {
+              String stage = jsonRecvData["stage"].as<String>();
+              float temp = jsonRecvData["temp"].as<float>();
+              float hum = jsonRecvData["hum"].as<float>();
+              int timeLeft = jsonRecvData["time_left"].as<int>();
+
+              // Hiển thị thông tin về giai đoạn
+              Serial.print("Received stage info:\n");
+              Serial.print("Stage: "); Serial.println(stage.c_str());
+              Serial.print("Temperature: "); Serial.println(temp);
+              Serial.print("Humidity: "); Serial.println(hum);
+              Serial.print("Time left: "); Serial.println(timeLeft);
+
+              // Cập nhật thông tin giai đoạn lên màn hình
+              String stageString = String("Process: ") + stage;
+              lv_label_set_text(ui_giaidoan, stageString.c_str());
+
+              String fvTempString = String("FV: ") + String(temp) + "°C";
+              lv_label_set_text(ui_fvtemp, fvTempString.c_str());
+
+              String fvHumString = String("FV: ") + String(hum) + "%";
+              lv_label_set_text(ui_fvhumi, fvHumString.c_str());
+
+              String timeElapsedString = String("Time elapsed: ") + String(timeLeft) + "s";
+              lv_label_set_text(ui_timeelapsed, timeElapsedString.c_str());
+          }
         } else {
             Serial.println("Error parsing JSON");
         }
@@ -141,7 +169,7 @@ void ui_event_Startbnt(lv_event_t * e)
     if(event_code == LV_EVENT_CLICKED) {
         // Đặt cờ trạng thái StartState thành true (hoặc trạng thái bạn cần)
         StartState = true;
-        printf("StartState: %d\n", StartState);
+        //printf("StartState: %d\n", StartState);
         
     }
     sendParameterToSlave("StartState");
@@ -212,9 +240,9 @@ void sendParameterToSlave( const String &type) {
     stage4["temp"] = FVparameter.temp4;
     stage4["hum"] = FVparameter.hum4;
     stage4["time"] = FVparameter.time4;
-  }
-
-  if (type == "StartState"){
+  } 
+  
+  else if (type == "StartState") {
     doc["Start"] = StartState;
     StartState = false;
   }
@@ -224,8 +252,8 @@ void sendParameterToSlave( const String &type) {
   serializeJson(doc, json_data);
   mySerial.print(json_data);  // Gửi dữ liệu qua UART
   // Gửi dữ liệu qua UART
-  Serial.println("Sending sensor data to Slave...");
-  Serial.println(json_data);  // In dữ liệu JSON ra Serial để debug
+  // Serial.println("Sending sensor data to Slave...");
+  // Serial.println(json_data);  // In dữ liệu JSON ra Serial để debug
 }
 
 // Hàm gửi dữ liệu sensor đến MQTT
