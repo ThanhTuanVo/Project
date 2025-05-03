@@ -230,13 +230,13 @@ void sendParameterToSlave( const String &type) {
     stage2["time"] = FVparameter.time2;
 
     // Giai đoạn 3
-    JsonObject stage3 = doc.createNestedObject("Bao quan");
+    JsonObject stage3 = doc.createNestedObject("On dinh");
     stage3["temp"] = FVparameter.temp3;
     stage3["hum"] = FVparameter.hum3;
     stage3["time"] = FVparameter.time3;
 
     // Giai đoạn 4
-    JsonObject stage4 = doc.createNestedObject("On dinh");
+    JsonObject stage4 = doc.createNestedObject("Bao quan");
     stage4["temp"] = FVparameter.temp4;
     stage4["hum"] = FVparameter.hum4;
     stage4["time"] = FVparameter.time4;
@@ -266,45 +266,49 @@ void sendSensorDataToMQTT() {
 }
 
 void mqttConnectTask(void *parameter) {
-  // Kết nối với WiFi nếu chưa kết nối
-  if (WiFi.status() != WL_CONNECTED) {
-    Serial.println("Connecting to WiFi...");
-    while (WiFi.status() != WL_CONNECTED) {
-      delay(1000);
-      Serial.println("Connecting to WiFi...");
-    }
-    Serial.println("WiFi connected.");
-  }
-
-  // Kết nối với MQTT broker
-  client.setServer(mqtt_server, 1883);  // 1883 là port mặc định của MQTT
- 
-
+  // Khởi tạo client MQTT một lần duy nhất
+  client.setServer(mqtt_server, 1883);
+  
   while (true) {
-    if (!client.connected()) {
-      Serial.println("Connecting to MQTT...");
-      // Tạo ID kết nối MQTT
-      String clientId = "ESP32Client-";
-      clientId += String(random(0xffff), HEX);
+    // Kiểm tra kết nối WiFi trước
+    if (WiFi.status() != WL_CONNECTED) {
+      Serial.println("MQTT: Waiting for WiFi connection...");
+      vTaskDelay(5000 / portTICK_PERIOD_MS);  // Chờ 5s trước khi thử lại
+      continue;
+    }
 
+    // Xử lý kết nối MQTT
+    if (!client.connected()) {
+      Serial.println("MQTT: Attempting to connect...");
+      
+      String clientId = "ESP32Client-" + String(random(0xffff), HEX);
+      
       if (client.connect(clientId.c_str())) {
-        Serial.println("MQTT connected");
-        client.subscribe(mqtt_topic);  // Đăng ký subscribe cho topic
+        Serial.println("MQTT: Connected!");
+        client.subscribe(mqtt_topic);
       } else {
-        Serial.print("Failed to connect to MQTT. Retrying...");
-        delay(5000);
+        Serial.print("MQTT: Connection failed, rc=");
+        Serial.print(client.state());
+        Serial.println(", retrying in 5 seconds...");
+        vTaskDelay(5000 / portTICK_PERIOD_MS);
+        continue;
       }
     }
 
-    // Gửi dữ liệu sensor lên MQTT mỗi 10 giây
-    static unsigned long lastSendTime = 0;
-    if (millis() - lastSendTime > 10000) {
-      sendSensorDataToMQTT();
-      lastSendTime = millis();
+    // Gửi dữ liệu định kỳ
+    static uint32_t lastSendTime = 0;
+    uint32_t now = millis();
+    
+    if (now - lastSendTime >= 10000) {  // Mỗi 10 giây
+      if (WiFi.status() == WL_CONNECTED && client.connected()) {
+        sendSensorDataToMQTT();
+      }
+      lastSendTime = now;
     }
 
-    client.loop();  // Để xử lý các tin nhắn đến từ MQTT
-    vTaskDelay(100);  // Delay để tránh task chiếm hết CPU
+    // Duy trì kết nối MQTT
+    client.loop();
+    vTaskDelay(100 / portTICK_PERIOD_MS);  // Giảm tải CPU
   }
 }
 
@@ -377,44 +381,43 @@ void clearWiFiCredentials() {
 
 /** Wifi config with LVGL */
 void wifiTask(void *parameter) {
-  const char* ssid = wifi_ssid;
+  const char* ssid = (const char*)parameter;
   const char* password = wifi_password;
 
-  // Ngắt kết nối WiFi cũ, thiết lập lại chế độ WiFi Station và bắt đầu kết nối mới
-  WiFi.disconnect(true);
-  vTaskDelay(500);
-  WiFi.mode(WIFI_STA);
-  WiFi.begin(ssid, password);
-
-  int timeout = 20; // Thời gian tối đa là 10 giây để kết nối WiFi
-  while (WiFi.status() != WL_CONNECTED && timeout > 0) {
-    vTaskDelay(500);  // Chờ 500ms trước khi thử lại
-    Serial.print(".__.");
-    timeout--;
-  }
-
-  if (WiFi.status() == WL_CONNECTED) {
-    // Nếu kết nối WiFi thành công
-    Serial.printf("\nWiFi connected! IP: %s\n", WiFi.localIP().toString().c_str());
-    lv_label_set_text(ui_statuswf, "Connected");
-    lv_label_set_text(ui_wifiname, WiFi.SSID().c_str());
-
-    // Lưu SSID và mật khẩu vào EEPROM để tự động kết nối lần sau
-    saveWiFiCredentials(ssid, password);
-  } else {
-    // Nếu kết nối WiFi không thành công
-    Serial.println("\nConnect fail! Please check SSID & Password.");
-    lv_label_set_text(ui_statuswf, "Wrong WiFi");
-    lv_label_set_text(ui_wifiname, "No WiFi");
-
-    // Ngắt kết nối WiFi và tắt WiFi
+  while (true) {  // Vòng lặp vô hạn để thử lại kết nối
+    // Ngắt kết nối WiFi cũ và thiết lập lại
     WiFi.disconnect(true);
-    WiFi.mode(WIFI_OFF);
-  }
+    vTaskDelay(500 / portTICK_PERIOD_MS);
+    WiFi.mode(WIFI_STA);
+    WiFi.begin(ssid, password);
 
-  // Sau khi kết nối hoặc thất bại, xóa task WiFi để giải phóng bộ nhớ
-  //WiFiTaskHandle = NULL;  // Đặt lại handle task WiFi
-  vTaskDelete(NULL);  // Xóa task hiện tại
+    int timeout = 20; // 20 lần thử, mỗi lần 500ms => tổng 10 giây
+    while (WiFi.status() != WL_CONNECTED && timeout > 0) {
+      vTaskDelay(500 / portTICK_PERIOD_MS);
+      Serial.print(".");
+      timeout--;
+    }
+
+    if (WiFi.status() == WL_CONNECTED) {
+      Serial.printf("\nWiFi connected! IP: %s\n", WiFi.localIP().toString().c_str());
+      lv_label_set_text(ui_statuswf, "Connected");
+      lv_label_set_text(ui_wifiname, WiFi.SSID().c_str());
+      saveWiFiCredentials(ssid, password);
+      
+      // Giữ task WiFi chạy để kiểm tra kết nối định kỳ
+      while (WiFi.status() == WL_CONNECTED) {
+        vTaskDelay(10000 / portTICK_PERIOD_MS);  // Kiểm tra mỗi 10 giây
+      }
+      Serial.println("WiFi disconnected!");
+    } else {
+      Serial.println("\nConnect fail! Retrying in 10 seconds...");
+      lv_label_set_text(ui_statuswf, "Wrong WiFi");
+      lv_label_set_text(ui_wifiname, "No WiFi");
+      WiFi.disconnect(true);
+      WiFi.mode(WIFI_OFF);
+      vTaskDelay(10000 / portTICK_PERIOD_MS);  // Chờ 10 giây trước khi thử lại
+    }
+  }
 }
 
 
@@ -487,14 +490,19 @@ Serial.println("SD card initialized.");
   readWiFiCredentials();
 
   if (strlen(wifi_ssid) > 0 && strlen(wifi_password) > 0) {
-    Serial.println("Connecting to WiFi...");
-    // Tạo task WiFi, nếu WiFiTaskHandle đã có giá trị thì không tạo lại
-    if (WiFiTaskHandle == NULL) {
-      xTaskCreate(wifiTask, "WiFiTask", 4096, (void*)wifi_ssid, 0, &WiFiTaskHandle);
+    Serial.println("Attempting WiFi connection...");
+    if (WiFiTaskHandle == NULL || eTaskGetState(WiFiTaskHandle) == eDeleted) {
+      xTaskCreate(
+        wifiTask,          // Hàm thực thi
+        "WiFiTask",        // Tên task
+        4096,              // Kích thước stack
+        (void*)wifi_ssid,  // Tham số
+        1,                 // Độ ưu tiên (thấp hơn task sensor)
+        &WiFiTaskHandle    // Handle
+      );
     }
   } else {
-    Serial.println("No valid WiFi credentials found. Please input new WiFi credentials.");
-    // Yêu cầu người dùng nhập thông tin WiFi nếu không có dữ liệu lưu trữ
+    Serial.println("No WiFi credentials found");
   }
 
 /** lv timer for run task */
@@ -503,7 +511,7 @@ lv_timer_t* WifiTask = lv_timer_create(connectWifi, 5000, NULL);
 xTaskCreate(ReceiveSensorDataFromSlave, "SensorDataTask", 4096, NULL, 2, &SensorTaskHandle);
 
 if (MQTTTaskHandle == NULL) {
-  xTaskCreate(mqttConnectTask, "MQTTConnectTask", 4096, NULL, 1, &MQTTTaskHandle);
+  xTaskCreate(mqttConnectTask, "MQTTConnectTask", 4096, NULL, 0, &MQTTTaskHandle);
 }
 
 Serial.println("Setup done");
