@@ -26,6 +26,10 @@ Adafruit_MAX31865 pt100 = Adafruit_MAX31865(MAX31865_CS, MAX31865_SDI, MAX31865_
 Adafruit_SHT31 sht31 = Adafruit_SHT31();
 
 // Cấu trúc dữ liệu cảm biến và tham số
+float pt100_temp;
+float sht_hum;
+
+
 typedef struct sensor {
     int id;
     float temp;
@@ -128,6 +132,12 @@ void runStages() {
         doc["hum"] = FVparameter.hum1;
         doc["time_left"] = (FVparameter.time1.toInt() * 1000 - (currentTime - stageStartTime)) / 1000;
 
+        if (pt100_temp < FVparameter.temp1) {
+          digitalWrite(48, HIGH);  // Bật LED nếu nhiệt độ hiện tại thấp hơn nhiệt độ cài đặt
+        } else {
+          digitalWrite(48, LOW);   // Tắt LED nếu nhiệt độ đã đạt yêu cầu
+        }
+
         String output;
         ArduinoJson::serializeJson(doc, output);
         mySerial.print(output); // Gửi dữ liệu JSON qua UART
@@ -147,6 +157,12 @@ void runStages() {
         doc["temp"] = FVparameter.temp2;
         doc["hum"] = FVparameter.hum2;
         doc["time_left"] = (FVparameter.time2.toInt() * 1000 - (currentTime - stageStartTime)) / 1000;
+
+        if (pt100_temp < FVparameter.temp1) {
+          digitalWrite(48, HIGH);  // Bật LED nếu nhiệt độ hiện tại thấp hơn nhiệt độ cài đặt
+        } else {
+          digitalWrite(48, LOW);   // Tắt LED nếu nhiệt độ đã đạt yêu cầu
+        }
 
         String output;
         ArduinoJson::serializeJson(doc, output);
@@ -168,6 +184,12 @@ void runStages() {
         doc["hum"] = FVparameter.hum3;
         doc["time_left"] = (FVparameter.time3.toInt() * 1000 - (currentTime - stageStartTime)) / 1000;
 
+        if (pt100_temp < FVparameter.temp1) {
+          digitalWrite(48, HIGH);  // Bật LED nếu nhiệt độ hiện tại thấp hơn nhiệt độ cài đặt
+        } else {
+          digitalWrite(48, LOW);   // Tắt LED nếu nhiệt độ đã đạt yêu cầu
+        }
+
         String output;
         ArduinoJson::serializeJson(doc, output);
         mySerial.print(output); // Gửi dữ liệu JSON qua UART
@@ -187,6 +209,12 @@ void runStages() {
         doc["temp"] = FVparameter.temp4;
         doc["hum"] = FVparameter.hum4;
         doc["time_left"] = (FVparameter.time4.toInt() * 1000 - (currentTime - stageStartTime)) / 1000;
+
+        if (pt100_temp < FVparameter.temp1) {
+          digitalWrite(48, HIGH);  // Bật LED nếu nhiệt độ hiện tại thấp hơn nhiệt độ cài đặt
+        } else {
+          digitalWrite(48, LOW);   // Tắt LED nếu nhiệt độ đã đạt yêu cầu
+        }
 
         String output;
         ArduinoJson::serializeJson(doc, output);
@@ -216,8 +244,8 @@ void sendSensorDataToMaster(void *parameter) {
     PTaSHTsensor.id = BOARD_ID;
     PTaSHTsensor.readingId++;
 
-    float pt100_temp = pt100.temperature(RNOMINAL, RREF);
-    float sht_hum = sht31.readHumidity();
+    pt100_temp = pt100.temperature(RNOMINAL, RREF);
+    sht_hum = sht31.readHumidity();
 
     if (isnan(pt100_temp)) {
       Serial.println("Lỗi đọc PT100!");
@@ -251,9 +279,11 @@ void sendSensorDataToMaster(void *parameter) {
 }
 
 void setup() {
-  Wire.begin(36, 35); // SDA: GPIO 48, SCL: GPIO 47
+  Wire.begin(36, 35); // SDA: GPIO 36, SCL: GPIO 35
   Serial.begin(115200);
   mySerial.begin(115200, SERIAL_8N1, 18, 17); // RX: GPIO 18, TX: GPIO 17
+
+  pinMode(48, OUTPUT); // Đặt GPIO48 là đầu ra (LED)
 
   if (!pt100.begin(MAX31865_3WIRE)) {
     Serial.println(" Không tìm thấy cảm biến PT100!");
