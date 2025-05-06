@@ -32,7 +32,7 @@ TaskHandle_t WiFiTaskHandle = NULL;
 TaskHandle_t SensorTaskHandle = NULL;
 TaskHandle_t MQTTTaskHandle = NULL;
 
-const char* mqtt_server = "116.108.82.46";
+const char* mqtt_server = "116.108.86.129";
 const char* mqtt_topic = "window";
 
 WiFiClient espClient;
@@ -132,6 +132,7 @@ void ReceiveSensorDataFromSlave(void *parameter) {
               float temp = jsonRecvData["temp"].as<float>();
               float hum = jsonRecvData["hum"].as<float>();
               int timeLeft = jsonRecvData["time_left"].as<int>();
+              bool heaterStatus = jsonRecvData["heater_status"].as<bool>();
 
               // Hiển thị thông tin về giai đoạn
               Serial.print("Received stage info:\n");
@@ -152,6 +153,9 @@ void ReceiveSensorDataFromSlave(void *parameter) {
 
               String timeElapsedString = String("Time elapsed: ") + String(timeLeft) + "s";
               lv_label_set_text(ui_timeelapsed, timeElapsedString.c_str());
+
+              String heaterStatusString = heaterStatus ? "Heating:  ON" : "Heating:  OFF";
+              lv_label_set_text(ui_heating, heaterStatusString.c_str());
           }
         } else {
             Serial.println("Error parsing JSON");
@@ -163,55 +167,6 @@ void ReceiveSensorDataFromSlave(void *parameter) {
 
 bool StartState = false;
 
-void ui_event_Startbnt(lv_event_t * e)
-{
-    lv_event_code_t event_code = lv_event_get_code(e);
-    if(event_code == LV_EVENT_CLICKED) {
-        // Đặt cờ trạng thái StartState thành true (hoặc trạng thái bạn cần)
-        StartState = true;
-        //printf("StartState: %d\n", StartState);
-        
-    }
-    sendParameterToSlave("StartState");
-}
-
-void ui_event_okbnt(lv_event_t * e)
-{
-    lv_event_code_t event_code = lv_event_get_code(e);
-
-    if (event_code == LV_EVENT_RELEASED) {
-        // Lấy thông tin từ các textarea
-        FVparameter.temp1 = atof(lv_textarea_get_text(ui_tempsetting1));
-        FVparameter.hum1 = atof(lv_textarea_get_text(ui_humdsetting1));
-        FVparameter.time1 = String(lv_textarea_get_text(ui_timesetting1));
-
-        FVparameter.temp2 = atof(lv_textarea_get_text(ui_tempsetting2));
-        FVparameter.hum2 = atof(lv_textarea_get_text(ui_humdsetting2));
-        FVparameter.time2 = String(lv_textarea_get_text(ui_timesetting2));
-
-        FVparameter.temp3 = atof(lv_textarea_get_text(ui_tempsetting3));
-        FVparameter.hum3 = atof(lv_textarea_get_text(ui_humdsetting3));
-        FVparameter.time3 = String(lv_textarea_get_text(ui_timesetting3));
-
-        FVparameter.temp4 = atof(lv_textarea_get_text(ui_tempsetting4));
-        FVparameter.hum4 = atof(lv_textarea_get_text(ui_humdsetting4));
-        FVparameter.time4 = String(lv_textarea_get_text(ui_timesetting4));
-
-        // In thông số của tất cả các giai đoạn
-        // printf("Giai doan 1 (Say khu am) - Nhiệt độ: %s, Độ ẩm: %s, Thời gian: %s\n", temperature1, humidity1, time1);
-        // printf("Giai doan 2 (Len men) - Nhiệt độ: %s, Độ ẩm: %s, Thời gian: %s\n", temperature2, humidity2, time2);
-        // printf("Giai doan 3 (On dinh) - Nhiệt độ: %s, Độ ẩm: %s, Thời gian: %s\n", temperature3, humidity3, time3);
-        // printf("Giai doan 4 (Bao quan) - Nhiệt độ: %s, Độ ẩm: %s, Thời gian: %s\n", temperature4, humidity4, time4);
-
-        sendParameterToSlave("parameter");
-
-        // Xóa màn hình hiện tại (ui_Screen2)
-        _ui_screen_delete(&ui_Screen2);
-
-        // Chuyển sang màn hình ui_Screen3
-        _ui_screen_change(&ui_Screen3, LV_SCR_LOAD_ANIM_MOVE_TOP, 500, 0, &ui_Screen3_screen_init);
-    }
-}
 
 void sendParameterToSlave( const String &type) {
   StaticJsonDocument<512> doc;
@@ -254,6 +209,38 @@ void sendParameterToSlave( const String &type) {
   // Gửi dữ liệu qua UART
   // Serial.println("Sending sensor data to Slave...");
   // Serial.println(json_data);  // In dữ liệu JSON ra Serial để debug
+}
+
+// Hàm gửi thông số cài đặt đến MQTT
+void sendConfigurationToMQTT() {
+  if (client.connected()) {
+    // Tạo payload JSON để gửi các thông số cài đặt cho từng giai đoạn
+    String payload = String("{") +
+                     "\"Say khu am\":{" +
+                     "\"temp\":" + String(FVparameter.temp1) + 
+                     ", \"hum\":" + String(FVparameter.hum1) + 
+                     ", \"time\":\"" + FVparameter.time1 + "\"}, " +
+                     
+                     "\"Len men\":{" +
+                     "\"temp\":" + String(FVparameter.temp2) + 
+                     ", \"hum\":" + String(FVparameter.hum2) + 
+                     ", \"time\":\"" + FVparameter.time2 + "\"}, " +
+                     
+                     "\"On dinh\":{" +
+                     "\"temp\":" + String(FVparameter.temp3) + 
+                     ", \"hum\":" + String(FVparameter.hum3) + 
+                     ", \"time\":\"" + FVparameter.time3 + "\"}, " +
+                     
+                     "\"Bao quan\":{" +
+                     "\"temp\":" + String(FVparameter.temp4) + 
+                     ", \"hum\":" + String(FVparameter.hum4) + 
+                     ", \"time\":\"" + FVparameter.time4 + "\"} " +
+                     "}";
+
+    // Gửi dữ liệu lên MQTT với chủ đề "device/configuration"
+    client.publish(mqtt_topic, payload.c_str());
+    Serial.println("Configuration sent to MQTT broker: " + payload);
+  }
 }
 
 // Hàm gửi dữ liệu sensor đến MQTT
@@ -391,9 +378,9 @@ void wifiTask(void *parameter) {
     WiFi.mode(WIFI_STA);
     WiFi.begin(ssid, password);
 
-    int timeout = 20; // 20 lần thử, mỗi lần 500ms => tổng 10 giây
+    int timeout = 5; // 20 lần thử, mỗi lần 500ms => tổng 10 giây
     while (WiFi.status() != WL_CONNECTED && timeout > 0) {
-      vTaskDelay(500 / portTICK_PERIOD_MS);
+      vTaskDelay(2000 / portTICK_PERIOD_MS);
       Serial.print(".");
       timeout--;
     }
@@ -440,9 +427,60 @@ void connectWifi(lv_timer_t * timer) {
   }
 }
 
+void ui_event_Startbnt(lv_event_t * e)
+{
+    lv_event_code_t event_code = lv_event_get_code(e);
+    if(event_code == LV_EVENT_CLICKED) {
+        // Đặt cờ trạng thái StartState thành true (hoặc trạng thái bạn cần)
+        StartState = true;
+        //printf("StartState: %d\n", StartState);
+        sendConfigurationToMQTT();
+    }
+    
+    sendParameterToSlave("StartState");
+}
+
+void ui_event_okbnt(lv_event_t * e)
+{
+    lv_event_code_t event_code = lv_event_get_code(e);
+
+    if (event_code == LV_EVENT_RELEASED) {
+        // Lấy thông tin từ các textarea
+        FVparameter.temp1 = atof(lv_textarea_get_text(ui_tempsetting1));
+        FVparameter.hum1 = atof(lv_textarea_get_text(ui_humdsetting1));
+        FVparameter.time1 = String(lv_textarea_get_text(ui_timesetting1));
+
+        FVparameter.temp2 = atof(lv_textarea_get_text(ui_tempsetting2));
+        FVparameter.hum2 = atof(lv_textarea_get_text(ui_humdsetting2));
+        FVparameter.time2 = String(lv_textarea_get_text(ui_timesetting2));
+
+        FVparameter.temp3 = atof(lv_textarea_get_text(ui_tempsetting3));
+        FVparameter.hum3 = atof(lv_textarea_get_text(ui_humdsetting3));
+        FVparameter.time3 = String(lv_textarea_get_text(ui_timesetting3));
+
+        FVparameter.temp4 = atof(lv_textarea_get_text(ui_tempsetting4));
+        FVparameter.hum4 = atof(lv_textarea_get_text(ui_humdsetting4));
+        FVparameter.time4 = String(lv_textarea_get_text(ui_timesetting4));
+
+        // In thông số của tất cả các giai đoạn
+        // printf("Giai doan 1 (Say khu am) - Nhiệt độ: %s, Độ ẩm: %s, Thời gian: %s\n", temperature1, humidity1, time1);
+        // printf("Giai doan 2 (Len men) - Nhiệt độ: %s, Độ ẩm: %s, Thời gian: %s\n", temperature2, humidity2, time2);
+        // printf("Giai doan 3 (On dinh) - Nhiệt độ: %s, Độ ẩm: %s, Thời gian: %s\n", temperature3, humidity3, time3);
+        // printf("Giai doan 4 (Bao quan) - Nhiệt độ: %s, Độ ẩm: %s, Thời gian: %s\n", temperature4, humidity4, time4);
+
+        sendParameterToSlave("parameter");
+
+        // Xóa màn hình hiện tại (ui_Screen2)
+        _ui_screen_delete(&ui_Screen2);
+
+        // Chuyển sang màn hình ui_Screen3
+        _ui_screen_change(&ui_Screen3, LV_SCR_LOAD_ANIM_MOVE_TOP, 500, 0, &ui_Screen3_screen_init);
+    }
+}
+
 void setup()
 {
-  // Serial.begin(115200);
+  //Serial.begin(115200);
   mySerial.begin(115200, SERIAL_8N1, 44, 43); // RX_PIN, TX_PIN là các chân UART0
 
   lv_init();
